@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Course</title>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Upload a New Course</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="course-title">Course Title:</label>
+                <input type="text" id="course-title" name="title" required />
+            </div>
+
+            <div class="form-group">
+                <label for="course-description">Course Description:</label>
+                <textarea id="course-description" name="description" rows="4" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="course-category">Category:</label>
+                <select id="course-category" name="category" required>
+                    <option value="">Select a category</option>
+                    <option value="Mobile Development">Mobile Development</option>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Design">Design</option>
+                    <option value="Backend Development">Backend Development</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="video">Upload Video:</label>
+                <input type="file" name="video" accept="video/*" required />
+            </div>
+
+            <div class="form-group">
+                <label for="image">Upload Image:</label>
+                <input type="file" name="image" accept="image/*" required />
+            </div>
+
+            <button type="submit" class="submit-btn">Upload Course</button>
+        </form>
+    </div>
+    <div id="loading_container" style="display: none;">
+        <div class="loader"></div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const loadingMessage = document.getElementById('loading_container');
+            loadingMessage.style.display = 'block';
+
+            try {
+                // Upload both video and image in one request
+                const uploadResponse = await fetch('http://localhost:3000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Network response was not ok: ' + await uploadResponse.text());
+                }
+
+                const uploadResult = await uploadResponse.json(); // Get the upload response
+                const videoUrl = uploadResult.videoUrl; // Extract video URL from response
+                const imageUrl = uploadResult.imageUrl; // Extract image URL from response
+
+                // Collect the course data
+                const title = document.getElementById('course-title').value;
+                const description = document.getElementById('course-description').value;
+                const category = document.getElementById('course-category').value;
+
+                const courseData = {
+                    title: title,
+                    description: description,
+                    category: category,
+                    videoUrl: videoUrl, // Use the retrieved video URL
+                    imageUrl: imageUrl, // Use the retrieved image URL
+                };
+
+                // Send the course data to your backend
+                const uploadCourseResponse = await fetch('http://localhost:3000/courseupload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(courseData), // Convert data to JSON string
+                });
+
+                if (!uploadCourseResponse.ok) {
+                    throw new Error('Error uploading course data: ' + await uploadCourseResponse.text());
+                }
+
+                const result = await uploadCourseResponse.json(); // Get the response for the course upload
+                console.log(result);
+                alert('Upload successful '); // Display success message with the result
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error: ' + error.message); // Display error message
+            } finally {
+                loadingMessage.style.display = 'none'; // Hide loading message
+                document.getElementById('uploadForm').reset();            }
+        });
+    </script>
+</body>
+</html>
